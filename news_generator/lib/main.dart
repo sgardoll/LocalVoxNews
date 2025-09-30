@@ -67,7 +67,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     }
 
     try {
-      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
+      const backendUrl = '';
       final response = await http.get(
         Uri.parse('$backendUrl/api/search-cities?q=$query'),
       );
@@ -96,7 +96,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     });
 
     try {
-      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
+      const backendUrl = '';
       final response = await http.post(
         Uri.parse('$backendUrl/api/generate-podcast'),
         headers: {'Content-Type': 'application/json'},
@@ -108,7 +108,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
+        const backendUrl = '';
         setState(() {
           _generatedAudioUrl = '$backendUrl${data['audio_url']}';
           _generatedScript = data['script'];
@@ -131,7 +131,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
   Future<void> _schedulePodcast() async {
     try {
-      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
+      const backendUrl = '';
       final response = await http.post(
         Uri.parse('$backendUrl/api/schedule-podcast'),
         headers: {'Content-Type': 'application/json'},

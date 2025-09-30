@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from openai import OpenAI
 from elevenlabs import ElevenLabs, VoiceSettings
@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import base64
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../news_generator/build/web', static_url_path='')
 CORS(app)
 
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
@@ -218,5 +218,17 @@ def generate_scheduled_podcast(city, voice_id):
     except Exception as e:
         print(f"Error in scheduled podcast generation: {str(e)}")
 
+@app.route('/')
+def index():
+    return send_file('../news_generator/build/web/index.html')
+
+@app.route('/<path:path>')
+def serve_flutter_app(path):
+    file_path = os.path.join(app.static_folder, path)
+    if os.path.exists(file_path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_file('../news_generator/build/web/index.html')
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

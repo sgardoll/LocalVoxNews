@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pythonlibs/
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+env/
+ENV/
+
+# Generated audio files
+backend/generated_audio/
+
+# Flutter
+news_generator/.dart_tool/
+news_generator/build/
+news_generator/.flutter-plugins
+news_generator/.flutter-plugins-dependencies
+news_generator/.packages
+news_generator/pubspec.lock
+
+# Node
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Replit
+.upm/
+uv.lock
+replit.nix

@@ -111,8 +111,7 @@ Preferred communication style: Simple, everyday language.
 ## Deployment Configuration
 
 **Workflows:**
-- Backend: `cd backend && python app.py` (port 8000, console output)
-- Flutter: `cd news_generator && flutter run -d web-server --web-port=5000 --web-hostname=0.0.0.0` (port 5000, webview)
+- Backend: `cd backend && python app.py` (port 5000, webview) - Serves both Flutter frontend and API backend
 
 **Environment Variables Required:**
 - `OPENAI_API_KEY` - OpenAI authentication
