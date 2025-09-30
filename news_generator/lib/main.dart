@@ -67,8 +67,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     }
 
     try {
+      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/search-cities?q=$query'),
+        Uri.parse('$backendUrl/api/search-cities?q=$query'),
       );
 
       if (response.statusCode == 200) {
@@ -95,8 +96,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     });
 
     try {
+      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/generate-podcast'),
+        Uri.parse('$backendUrl/api/generate-podcast'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'city': _cityController.text,
@@ -106,8 +108,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
         setState(() {
-          _generatedAudioUrl = 'http://localhost:5000${data['audio_url']}';
+          _generatedAudioUrl = '$backendUrl${data['audio_url']}';
           _generatedScript = data['script'];
           _isGenerating = false;
         });
@@ -128,8 +131,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
   Future<void> _schedulePodcast() async {
     try {
+      final backendUrl = const String.fromEnvironment('BACKEND_URL', defaultValue: 'https://f0536dbe-ba98-46c3-83c2-5b527faaa9db-00-39aedvc1umtaa.worf.replit.dev:8000');
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/schedule-podcast'),
+        Uri.parse('$backendUrl/api/schedule-podcast'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'city': _cityController.text,
