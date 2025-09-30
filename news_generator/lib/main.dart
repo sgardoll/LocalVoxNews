@@ -42,7 +42,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   TimeOfDay _scheduledTime = const TimeOfDay(hour: 7, minute: 0);
   List<String> _citySuggestions = [];
   bool _isScheduled = false;
-  List<Map<String, String>> _availableVoices = [];
+  List<Map<String, dynamic>> _availableVoices = [];
   bool _isLoadingVoices = true;
 
   @override
@@ -65,9 +65,19 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
           _availableVoices = voices.map((voice) => {
             'id': voice['id'] as String,
             'name': voice['name'] as String,
+            'is_premade': voice['is_premade'] as bool? ?? false,
           }).toList();
+          
+          _availableVoices.sort((a, b) {
+            final aPremade = a['is_premade'] as bool;
+            final bPremade = b['is_premade'] as bool;
+            if (aPremade && !bPremade) return -1;
+            if (!aPremade && bPremade) return 1;
+            return 0;
+          });
+          
           if (_availableVoices.isNotEmpty) {
-            _selectedVoice = _availableVoices[0]['id'];
+            _selectedVoice = _availableVoices[0]['id'] as String;
           }
           _isLoadingVoices = false;
         });
@@ -83,14 +93,14 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   void _useDefaultVoices() {
     setState(() {
       _availableVoices = [
-        {'id': 'Rachel', 'name': 'Rachel (Warm & Conversational)'},
-        {'id': 'Drew', 'name': 'Drew (Professional Male)'},
-        {'id': 'Clyde', 'name': 'Clyde (Energetic)'},
-        {'id': 'Paul', 'name': 'Paul (Authoritative)'},
-        {'id': 'Domi', 'name': 'Domi (Friendly Female)'},
-        {'id': 'Dave', 'name': 'Dave (Natural Male)'},
+        {'id': 'Rachel', 'name': 'Rachel', 'is_premade': true},
+        {'id': 'Drew', 'name': 'Drew', 'is_premade': true},
+        {'id': 'Clyde', 'name': 'Clyde', 'is_premade': true},
+        {'id': 'Paul', 'name': 'Paul', 'is_premade': true},
+        {'id': 'Domi', 'name': 'Domi', 'is_premade': true},
+        {'id': 'Dave', 'name': 'Dave', 'is_premade': true},
       ];
-      _selectedVoice = _availableVoices[0]['id'];
+      _selectedVoice = _availableVoices[0]['id'] as String;
       _isLoadingVoices = false;
     });
   }
@@ -294,9 +304,50 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
                     prefixIcon: Icon(Icons.record_voice_over),
                   ),
                   items: _availableVoices.map((voice) {
+                    final isPremade = voice['is_premade'] as bool? ?? false;
                     return DropdownMenuItem(
-                      value: voice['id'],
-                      child: Text(voice['name']!),
+                      value: voice['id'] as String,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(voice['name'] as String),
+                          ),
+                          if (isPremade)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.green.shade700,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.verified,
+                                    size: 14,
+                                    color: Colors.green.shade700,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Optimized',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) {

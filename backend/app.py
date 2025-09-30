@@ -56,11 +56,19 @@ def get_voices():
         voices = elevenlabs_client.voices.get_all()
         voice_list = []
         for voice in voices.voices:
+            labels = {}
+            if hasattr(voice, 'labels'):
+                labels = voice.labels if voice.labels else {}
+            
+            is_premade = labels.get('use_case') == 'premade' if labels else False
+            
             voice_list.append({
                 'id': voice.voice_id,
                 'name': voice.name,
                 'category': voice.category if hasattr(voice, 'category') else 'general',
-                'description': voice.description if hasattr(voice, 'description') else ''
+                'description': voice.description if hasattr(voice, 'description') else '',
+                'is_premade': is_premade,
+                'labels': labels
             })
         return jsonify({'voices': voice_list})
     except Exception as e:
