@@ -42,20 +42,57 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   TimeOfDay _scheduledTime = const TimeOfDay(hour: 7, minute: 0);
   List<String> _citySuggestions = [];
   bool _isScheduled = false;
-  
-  final List<Map<String, String>> _availableVoices = [
-    {'id': 'Rachel', 'name': 'Rachel (Warm & Conversational)'},
-    {'id': 'Drew', 'name': 'Drew (Professional Male)'},
-    {'id': 'Clyde', 'name': 'Clyde (Energetic)'},
-    {'id': 'Paul', 'name': 'Paul (Authoritative)'},
-    {'id': 'Domi', 'name': 'Domi (Friendly Female)'},
-    {'id': 'Dave', 'name': 'Dave (Natural Male)'},
-  ];
+  List<Map<String, String>> _availableVoices = [];
+  bool _isLoadingVoices = true;
 
   @override
   void initState() {
     super.initState();
-    _selectedVoice = _availableVoices[0]['id'];
+    _fetchVoices();
+  }
+
+  Future<void> _fetchVoices() async {
+    try {
+      const backendUrl = '';
+      final response = await http.get(
+        Uri.parse('$backendUrl/api/voices'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final voices = data['voices'] as List;
+        setState(() {
+          _availableVoices = voices.map((voice) => {
+            'id': voice['id'] as String,
+            'name': voice['name'] as String,
+          }).toList();
+          if (_availableVoices.isNotEmpty) {
+            _selectedVoice = _availableVoices[0]['id'];
+          }
+          _isLoadingVoices = false;
+        });
+      } else {
+        _useDefaultVoices();
+      }
+    } catch (e) {
+      print('Error fetching voices: $e');
+      _useDefaultVoices();
+    }
+  }
+
+  void _useDefaultVoices() {
+    setState(() {
+      _availableVoices = [
+        {'id': 'Rachel', 'name': 'Rachel (Warm & Conversational)'},
+        {'id': 'Drew', 'name': 'Drew (Professional Male)'},
+        {'id': 'Clyde', 'name': 'Clyde (Energetic)'},
+        {'id': 'Paul', 'name': 'Paul (Authoritative)'},
+        {'id': 'Domi', 'name': 'Domi (Friendly Female)'},
+        {'id': 'Dave', 'name': 'Dave (Natural Male)'},
+      ];
+      _selectedVoice = _availableVoices[0]['id'];
+      _isLoadingVoices = false;
+    });
   }
 
   Future<void> _searchCities(String query) async {
@@ -242,25 +279,32 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
             
             const SizedBox(height: 24),
             
-            DropdownButtonFormField<String>(
-              value: _selectedVoice,
-              decoration: const InputDecoration(
-                labelText: 'Voice',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.record_voice_over),
-              ),
-              items: _availableVoices.map((voice) {
-                return DropdownMenuItem(
-                  value: voice['id'],
-                  child: Text(voice['name']!),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedVoice = value;
-                });
-              },
-            ),
+            _isLoadingVoices
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : DropdownButtonFormField<String>(
+                  value: _selectedVoice,
+                  decoration: const InputDecoration(
+                    labelText: 'Voice',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.record_voice_over),
+                  ),
+                  items: _availableVoices.map((voice) {
+                    return DropdownMenuItem(
+                      value: voice['id'],
+                      child: Text(voice['name']!),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedVoice = value;
+                    });
+                  },
+                ),
             
             const SizedBox(height: 24),
             

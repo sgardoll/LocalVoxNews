@@ -50,6 +50,23 @@ def search_cities():
     suggestions = [city for city in US_CITIES if query in city.lower()][:10]
     return jsonify({'cities': suggestions})
 
+@app.route('/api/voices', methods=['GET'])
+def get_voices():
+    try:
+        voices = elevenlabs_client.voices.get_all()
+        voice_list = []
+        for voice in voices.voices:
+            voice_list.append({
+                'id': voice.voice_id,
+                'name': voice.name,
+                'category': voice.category if hasattr(voice, 'category') else 'general',
+                'description': voice.description if hasattr(voice, 'description') else ''
+            })
+        return jsonify({'voices': voice_list})
+    except Exception as e:
+        print(f"Error fetching voices: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/generate-podcast', methods=['POST'])
 def generate_podcast():
     data = request.json
