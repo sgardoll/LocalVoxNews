@@ -28,16 +28,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 
-**Technology Stack:** Python Flask REST API (port 8000)
+**Technology Stack:** Python Flask REST API (port 5000)
 - **Framework:** Flask with CORS enabled for Flutter web access
 - **Background Processing:** APScheduler for scheduled daily podcast generation
 - **Audio Storage:** Local filesystem in `generated_audio` directory
+- **Production Server:** Gunicorn WSGI server with 2 workers
 
 **API Endpoints:**
 1. `/api/search-cities` - City autocomplete (GET)
-2. `/api/generate-podcast` - Generate podcast on-demand (POST)
-3. `/api/schedule-podcast` - Schedule daily generation (POST)
-4. `/audio/<filename>` - Serve generated audio files (GET)
+2. `/api/voices` - Fetch available ElevenLabs voices dynamically (GET)
+3. `/api/generate-podcast` - Generate podcast on-demand (POST)
+4. `/api/schedule-podcast` - Schedule daily generation (POST)
+5. `/audio/<filename>` - Serve generated audio files (GET)
+6. `/` - Health check endpoint & serves Flutter web app
 
 **Key Architectural Decisions:**
 
@@ -54,7 +57,7 @@ Preferred communication style: Simple, everyday language.
    - Decision: Focus ONLY on city-specific news, excludes national/international
 
 3. **Script Generation Pipeline**
-   - OpenAI GPT-4o-mini for content generation
+   - Anthropic Claude 4.5 Sonnet (claude-sonnet-4-20250514) for content generation
    - Structured format: intro → headlines → community events → weather → sign-off
    - NPR-style warm, conversational tone
    - Includes ElevenLabs v3 SSML markup for natural speech:
@@ -62,14 +65,16 @@ Preferred communication style: Simple, everyday language.
      * `<prosody>` tags for emphasis
      * `<phoneme>` for pronunciation
    - Target duration: 10-15 minutes
-   - Decision: Explain technical terms in simple language
+   - Decision: Switched from OpenAI to Claude for better script quality and reliability
 
-4. **Voice Generation**
+4. **Voice Generation & Selection**
    - ElevenLabs API with eleven_turbo_v2_5 model
+   - **Dynamic Voice Loading:** Fetches all available voices from user's ElevenLabs account via API
+   - **Optimization Highlighting:** "Premade" voices are marked with ✓ Optimized badge
+   - **Smart Sorting:** Optimized voices appear first in dropdown for best quality
    - Configurable voice parameters (stability, similarity, style)
    - Speaker boost enabled for professional quality
-   - Available voices: Rachel, Drew, Clyde, Paul, Domi, Dave
-   - Default: Rachel (warm, conversational radio host tone)
+   - Voice selection includes all voices with proper permissions
 
 5. **Scheduling System**
    - APScheduler with cron triggers
@@ -87,17 +92,17 @@ Preferred communication style: Simple, everyday language.
 ### External Dependencies
 
 **API Services:**
-- **OpenAI API:** GPT models for script generation (key: OPENAI_API_KEY)
-- **ElevenLabs API:** Text-to-speech conversion (key: ELEVENLABS_API_KEY)
+- **Anthropic API:** Claude 4.5 Sonnet for script generation (key: ANTHROPIC_API_KEY)
+- **ElevenLabs API:** Text-to-speech conversion with dynamic voice loading (key: ELEVENLABS_API_KEY)
 - **NewsAPI:** Local news aggregation (key: NEWS_API_KEY)
 
 **Python Packages:**
 - flask, flask-cors - Web framework and CORS support
 - requests - HTTP client for API calls
-- openai - OpenAI SDK
+- anthropic - Anthropic Claude SDK
 - elevenlabs - ElevenLabs SDK
 - apscheduler - Background job scheduling
-- python-dotenv - Environment variable management
+- gunicorn - Production WSGI server
 
 **Flutter Packages:**
 - http ^1.1.0 - HTTP client
@@ -110,12 +115,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Deployment Configuration
 
-**Workflows:**
+**Development Workflow:**
 - Backend: `cd backend && python app.py` (port 5000, webview) - Serves both Flutter frontend and API backend
 
+**Production Deployment:**
+- **Target:** Autoscale deployment (scales to zero when idle)
+- **Server:** Gunicorn WSGI with 2 workers (120s timeout)
+- **Command:** `gunicorn --bind=0.0.0.0:5000 --workers=2 --timeout=120 backend.app:app`
+- **Health Check:** `/` endpoint serves Flutter app (200 OK)
+
 **Environment Variables Required:**
-- `OPENAI_API_KEY` - OpenAI authentication
-- `ELEVENLABS_API_KEY` - ElevenLabs authentication
+- `ANTHROPIC_API_KEY` - Anthropic Claude authentication
+- `ELEVENLABS_API_KEY` - ElevenLabs authentication (requires voices_read permission)
 - `NEWS_API_KEY` - NewsAPI authentication
 
 **Critical Requirements Met:**
@@ -131,11 +142,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (September 30, 2025)
 
-- Complete rebuild with Flutter web frontend (replaces previous React approach)
-- Flask backend implementation with all API integrations
-- City autocomplete functionality
-- Voice selection with 6 ElevenLabs v3 voices
-- On-demand podcast generation
-- Daily scheduling system
-- Audio playback in browser
-- Workflows configured for both frontend and backend
+- Switched AI model from OpenAI GPT to Anthropic Claude 4.5 Sonnet for improved script quality
+- Implemented dynamic voice loading from ElevenLabs API with "Optimized" badges for premade voices
+- Added production deployment configuration with Gunicorn WSGI server
+- Configured autoscale deployment with health check endpoint
+- Smart voice sorting: optimized/premade voices appear first in dropdown
+- All API integrations working: Claude 4.5, ElevenLabs (with voices_read permission), NewsAPI
+- Production-ready deployment setup with 2 Gunicorn workers and 120s timeout

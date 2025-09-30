@@ -34,7 +34,7 @@ class NewsGeneratorHome extends StatefulWidget {
 class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   final TextEditingController _cityController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  
+
   String? _selectedVoice;
   String? _generatedAudioUrl;
   String? _generatedScript;
@@ -54,20 +54,22 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   Future<void> _fetchVoices() async {
     try {
       const backendUrl = '';
-      final response = await http.get(
-        Uri.parse('$backendUrl/api/voices'),
-      );
+      final response = await http.get(Uri.parse('$backendUrl/api/voices'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final voices = data['voices'] as List;
         setState(() {
-          _availableVoices = voices.map((voice) => {
-            'id': voice['id'] as String,
-            'name': voice['name'] as String,
-            'is_premade': voice['is_premade'] as bool? ?? false,
-          }).toList();
-          
+          _availableVoices = voices
+              .map(
+                (voice) => {
+                  'id': voice['id'] as String,
+                  'name': voice['name'] as String,
+                  'is_premade': voice['is_premade'] as bool? ?? false,
+                },
+              )
+              .toList();
+
           _availableVoices.sort((a, b) {
             final aPremade = a['is_premade'] as bool;
             final bPremade = b['is_premade'] as bool;
@@ -75,7 +77,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
             if (!aPremade && bPremade) return 1;
             return 0;
           });
-          
+
           if (_availableVoices.isNotEmpty) {
             _selectedVoice = _availableVoices[0]['id'] as String;
           }
@@ -185,7 +187,8 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
         body: json.encode({
           'city': _cityController.text,
           'voice_id': _selectedVoice,
-          'time': '${_scheduledTime.hour}:${_scheduledTime.minute.toString().padLeft(2, '0')}',
+          'time':
+              '${_scheduledTime.hour}:${_scheduledTime.minute.toString().padLeft(2, '0')}',
         }),
       );
 
@@ -193,7 +196,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
         setState(() {
           _isScheduled = true;
         });
-        _showSuccess('Podcast scheduled for ${_scheduledTime.format(context)} daily');
+        _showSuccess(
+          'Podcast scheduled for ${_scheduledTime.format(context)} daily',
+        );
       } else {
         _showError('Failed to schedule podcast');
       }
@@ -250,7 +255,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            
+
             TextField(
               controller: _cityController,
               decoration: const InputDecoration(
@@ -261,7 +266,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
               ),
               onChanged: _searchCities,
             ),
-            
+
             if (_citySuggestions.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 8),
@@ -286,79 +291,77 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
                   },
                 ),
               ),
-            
+
             const SizedBox(height: 24),
-            
+
             _isLoadingVoices
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              : DropdownButtonFormField<String>(
-                  value: _selectedVoice,
-                  decoration: const InputDecoration(
-                    labelText: 'Voice',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.record_voice_over),
-                  ),
-                  items: _availableVoices.map((voice) {
-                    final isPremade = voice['is_premade'] as bool? ?? false;
-                    return DropdownMenuItem(
-                      value: voice['id'] as String,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(voice['name'] as String),
-                          ),
-                          if (isPremade)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.green.shade700,
-                                  width: 1,
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : DropdownButtonFormField<String>(
+                    value: _selectedVoice,
+                    decoration: const InputDecoration(
+                      labelText: 'Voice',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.record_voice_over),
+                    ),
+                    items: _availableVoices.map((voice) {
+                      final isPremade = voice['is_premade'] as bool? ?? false;
+                      return DropdownMenuItem(
+                        value: voice['id'] as String,
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(voice['name'] as String)),
+                            if (isPremade)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.verified,
-                                    size: 14,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
                                     color: Colors.green.shade700,
+                                    width: 1,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Optimized',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.verified,
+                                      size: 14,
                                       color: Colors.green.shade700,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Optimized',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedVoice = value;
-                    });
-                  },
-                ),
-            
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedVoice = value;
+                      });
+                    },
+                  ),
+
             const SizedBox(height: 24),
-            
+
             ElevatedButton.icon(
               onPressed: _isGenerating ? null : _generatePodcast,
               icon: _isGenerating
@@ -368,23 +371,25 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.play_circle),
-              label: Text(_isGenerating ? 'Generating...' : 'Generate Podcast Now'),
+              label: Text(
+                _isGenerating ? 'Generating...' : 'Generate Podcast Now',
+              ),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),
               ),
             ),
-            
+
             const SizedBox(height: 32),
             const Divider(),
             const SizedBox(height: 16),
-            
+
             const Text(
-              'Schedule Daily Podcast',
+              'Schedule for Daily Briefing',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             ListTile(
               leading: const Icon(Icons.access_time),
               title: Text('Schedule Time: ${_scheduledTime.format(context)}'),
@@ -395,30 +400,32 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
                 side: const BorderSide(color: Colors.grey),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             ElevatedButton.icon(
               onPressed: _cityController.text.isEmpty ? null : _schedulePodcast,
               icon: Icon(_isScheduled ? Icons.check_circle : Icons.schedule),
-              label: Text(_isScheduled ? 'Scheduled' : 'Schedule Daily Generation'),
+              label: Text(
+                _isScheduled ? 'Scheduled' : 'Schedule Daily Generation',
+              ),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: _isScheduled ? Colors.green : null,
               ),
             ),
-            
+
             if (_generatedAudioUrl != null) ...[
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
-              
+
               const Text(
                 'Generated Podcast',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               ElevatedButton.icon(
                 onPressed: _playPodcast,
                 icon: const Icon(Icons.play_arrow),
@@ -427,9 +434,9 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               if (_generatedScript != null) ...[
                 ExpansionTile(
                   title: const Text('View Script'),
