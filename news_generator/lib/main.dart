@@ -9,7 +9,12 @@ String getBackendUrl() {
   if (kIsWeb) {
     return '';
   } else {
-    const replitUrl = String.fromEnvironment('REPLIT_URL', defaultValue: 'http://localhost:5000');
+    const replitUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
+    if (replitUrl.isEmpty) {
+      throw Exception(
+        'BACKEND_URL not configured. Build with: flutter run --dart-define=BACKEND_URL=your_backend_url'
+      );
+    }
     return replitUrl;
   }
 }
