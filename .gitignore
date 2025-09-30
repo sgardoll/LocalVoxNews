@@ -44,9 +44,10 @@ news_generator/android/captures/
 news_generator/android/gradlew
 news_generator/android/gradlew.bat
 
-# Node
+# Node (not used in this project)
 node_modules/
 package-lock.json
+package.json
 
 # IDE
 .vscode/

@@ -79,7 +79,7 @@ def get_voices():
 def generate_podcast():
     data = request.json
     city = data.get('city')
-    voice_id = data.get('voice_id', 'Rachel')
+    voice_id = data.get('voice_id', 'HDA9tsk27wYi3uq0fPcK')
     
     if not city:
         return jsonify({'error': 'City is required'}), 400
@@ -116,7 +116,7 @@ def serve_audio(filename):
 def schedule_podcast():
     data = request.json
     city = data.get('city')
-    voice_id = data.get('voice_id', 'Rachel')
+    voice_id = data.get('voice_id', 'HDA9tsk27wYi3uq0fPcK')
     time_str = data.get('time', '07:00')
     
     if not city:

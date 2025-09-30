@@ -93,7 +93,13 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
             return 0;
           });
 
-          if (_availableVoices.isNotEmpty) {
+          final henryVoice = _availableVoices.firstWhere(
+            (voice) => voice['id'] == 'HDA9tsk27wYi3uq0fPcK',
+            orElse: () => _availableVoices.isNotEmpty ? _availableVoices[0] : {},
+          );
+          _selectedVoice = henryVoice['id'] as String?;
+          
+          if (_selectedVoice == null && _availableVoices.isNotEmpty) {
             _selectedVoice = _availableVoices[0]['id'] as String;
           }
           _isLoadingVoices = false;
@@ -110,6 +116,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
   void _useDefaultVoices() {
     setState(() {
       _availableVoices = [
+        {'id': 'HDA9tsk27wYi3uq0fPcK', 'name': 'Henry', 'is_premade': true},
         {'id': 'Rachel', 'name': 'Rachel', 'is_premade': true},
         {'id': 'Drew', 'name': 'Drew', 'is_premade': true},
         {'id': 'Clyde', 'name': 'Clyde', 'is_premade': true},
