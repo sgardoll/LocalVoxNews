@@ -3,7 +3,7 @@ import json
 import requests
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
-from openai import OpenAI
+from anthropic import Anthropic
 from elevenlabs import ElevenLabs, VoiceSettings
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
@@ -12,7 +12,7 @@ import base64
 app = Flask(__name__, static_folder='../news_generator/build/web', static_url_path='')
 CORS(app)
 
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+anthropic_client = Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
 elevenlabs_client = ElevenLabs(api_key=os.environ.get('ELEVENLABS_API_KEY'))
 news_api_key = os.environ.get('NEWS_API_KEY')
 
@@ -170,16 +170,17 @@ Important guidelines:
 
 Write ONLY the script text, no stage directions or meta-commentary."""
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
+    response = anthropic_client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=4096,
+        system="You are an expert radio script writer specializing in local news podcasts with warm, conversational delivery.",
         messages=[
-            {"role": "system", "content": "You are an expert radio script writer specializing in local news podcasts with warm, conversational delivery."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7
     )
     
-    return response.choices[0].message.content
+    return response.content[0].text
 
 def generate_voice_audio(script, voice_id, output_path):
     audio = elevenlabs_client.text_to_speech.convert(
