@@ -24,6 +24,26 @@ news_generator/.flutter-plugins-dependencies
 news_generator/.packages
 news_generator/pubspec.lock
 
+# iOS
+news_generator/ios/Pods/
+news_generator/ios/.symlinks/
+news_generator/ios/Flutter/Flutter.framework
+news_generator/ios/Flutter/Flutter.podspec
+news_generator/ios/.generated/
+news_generator/ios/Flutter/ephemeral/
+news_generator/ios/Runner.xcworkspace/xcuserdata/
+news_generator/ios/Runner.xcodeproj/xcuserdata/
+
+# Android
+news_generator/android/.gradle/
+news_generator/android/gradle/
+news_generator/android/local.properties
+news_generator/android/app/*.iml
+news_generator/android/app/.cxx/
+news_generator/android/captures/
+news_generator/android/gradlew
+news_generator/android/gradlew.bat
+
 # Node
 node_modules/
 package-lock.json

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:intl/intl.dart';
+
+String getBackendUrl() {
+  if (kIsWeb) {
+    return '';
+  } else {
+    const replitUrl = String.fromEnvironment('REPLIT_URL', defaultValue: 'http://localhost:5000');
+    return replitUrl;
+  }
+}
 
 void main() {
   runApp(const NewsGeneratorApp());
@@ -53,7 +63,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
   Future<void> _fetchVoices() async {
     try {
-      const backendUrl = '';
+      final backendUrl = getBackendUrl();
       final response = await http.get(Uri.parse('$backendUrl/api/voices'));
 
       if (response.statusCode == 200) {
@@ -116,7 +126,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     }
 
     try {
-      const backendUrl = '';
+      final backendUrl = getBackendUrl();
       final response = await http.get(
         Uri.parse('$backendUrl/api/search-cities?q=$query'),
       );
@@ -145,7 +155,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
     });
 
     try {
-      const backendUrl = '';
+      final backendUrl = getBackendUrl();
       final response = await http.post(
         Uri.parse('$backendUrl/api/generate-podcast'),
         headers: {'Content-Type': 'application/json'},
@@ -157,7 +167,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        const backendUrl = '';
+        final backendUrl = getBackendUrl();
         setState(() {
           _generatedAudioUrl = '$backendUrl${data['audio_url']}';
           _generatedScript = data['script'];
@@ -180,7 +190,7 @@ class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
 
   Future<void> _schedulePodcast() async {
     try {
-      const backendUrl = '';
+      final backendUrl = getBackendUrl();
       final response = await http.post(
         Uri.parse('$backendUrl/api/schedule-podcast'),
         headers: {'Content-Type': 'application/json'},
