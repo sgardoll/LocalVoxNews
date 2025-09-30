@@ -1,122 +1,358 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:intl/intl.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const NewsGeneratorApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class NewsGeneratorApp extends StatelessWidget {
+  const NewsGeneratorApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Hyper-Local News Generator',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const NewsGeneratorHome(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class NewsGeneratorHome extends StatefulWidget {
+  const NewsGeneratorHome({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<NewsGeneratorHome> createState() => _NewsGeneratorHomeState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _NewsGeneratorHomeState extends State<NewsGeneratorHome> {
+  final TextEditingController _cityController = TextEditingController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  
+  String? _selectedVoice;
+  String? _generatedAudioUrl;
+  String? _generatedScript;
+  bool _isGenerating = false;
+  TimeOfDay _scheduledTime = const TimeOfDay(hour: 7, minute: 0);
+  List<String> _citySuggestions = [];
+  bool _isScheduled = false;
+  
+  final List<Map<String, String>> _availableVoices = [
+    {'id': 'Rachel', 'name': 'Rachel (Warm & Conversational)'},
+    {'id': 'Drew', 'name': 'Drew (Professional Male)'},
+    {'id': 'Clyde', 'name': 'Clyde (Energetic)'},
+    {'id': 'Paul', 'name': 'Paul (Authoritative)'},
+    {'id': 'Domi', 'name': 'Domi (Friendly Female)'},
+    {'id': 'Dave', 'name': 'Dave (Natural Male)'},
+  ];
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    _selectedVoice = _availableVoices[0]['id'];
+  }
+
+  Future<void> _searchCities(String query) async {
+    if (query.length < 2) {
+      setState(() {
+        _citySuggestions = [];
+      });
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/search-cities?q=$query'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _citySuggestions = List<String>.from(data['cities'] ?? []);
+        });
+      }
+    } catch (e) {
+      print('Error searching cities: $e');
+    }
+  }
+
+  Future<void> _generatePodcast() async {
+    if (_cityController.text.isEmpty) {
+      _showError('Please enter a city name');
+      return;
+    }
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isGenerating = true;
+      _generatedAudioUrl = null;
+      _generatedScript = null;
     });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/generate-podcast'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'city': _cityController.text,
+          'voice_id': _selectedVoice,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _generatedAudioUrl = 'http://localhost:5000${data['audio_url']}';
+          _generatedScript = data['script'];
+          _isGenerating = false;
+        });
+      } else {
+        final error = json.decode(response.body);
+        _showError(error['error'] ?? 'Failed to generate podcast');
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    } catch (e) {
+      _showError('Error: $e');
+      setState(() {
+        _isGenerating = false;
+      });
+    }
+  }
+
+  Future<void> _schedulePodcast() async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/schedule-podcast'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'city': _cityController.text,
+          'voice_id': _selectedVoice,
+          'time': '${_scheduledTime.hour}:${_scheduledTime.minute.toString().padLeft(2, '0')}',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isScheduled = true;
+        });
+        _showSuccess('Podcast scheduled for ${_scheduledTime.format(context)} daily');
+      } else {
+        _showError('Failed to schedule podcast');
+      }
+    } catch (e) {
+      _showError('Error scheduling: $e');
+    }
+  }
+
+  Future<void> _playPodcast() async {
+    if (_generatedAudioUrl != null) {
+      await _audioPlayer.play(UrlSource(_generatedAudioUrl!));
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
+
+  Future<void> _selectTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _scheduledTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _scheduledTime = picked;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
+        title: const Text('Hyper-Local Morning News'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Generate Your Daily Local News Podcast',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 32),
+            
+            TextField(
+              controller: _cityController,
+              decoration: const InputDecoration(
+                labelText: 'City Name',
+                hintText: 'Start typing your city...',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_city),
+              ),
+              onChanged: _searchCities,
+            ),
+            
+            if (_citySuggestions.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _citySuggestions.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      dense: true,
+                      title: Text(_citySuggestions[index]),
+                      onTap: () {
+                        setState(() {
+                          _cityController.text = _citySuggestions[index];
+                          _citySuggestions = [];
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+            
+            const SizedBox(height: 24),
+            
+            DropdownButtonFormField<String>(
+              value: _selectedVoice,
+              decoration: const InputDecoration(
+                labelText: 'Voice',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.record_voice_over),
+              ),
+              items: _availableVoices.map((voice) {
+                return DropdownMenuItem(
+                  value: voice['id'],
+                  child: Text(voice['name']!),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedVoice = value;
+                });
+              },
+            ),
+            
+            const SizedBox(height: 24),
+            
+            ElevatedButton.icon(
+              onPressed: _isGenerating ? null : _generatePodcast,
+              icon: _isGenerating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.play_circle),
+              label: Text(_isGenerating ? 'Generating...' : 'Generate Podcast Now'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+            
+            const Text(
+              'Schedule Daily Podcast',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: Text('Schedule Time: ${_scheduledTime.format(context)}'),
+              trailing: const Icon(Icons.edit),
+              onTap: _selectTime,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.grey),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            ElevatedButton.icon(
+              onPressed: _cityController.text.isEmpty ? null : _schedulePodcast,
+              icon: Icon(_isScheduled ? Icons.check_circle : Icons.schedule),
+              label: Text(_isScheduled ? 'Scheduled' : 'Schedule Daily Generation'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: _isScheduled ? Colors.green : null,
+              ),
+            ),
+            
+            if (_generatedAudioUrl != null) ...[
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              const Text(
+                'Generated Podcast',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              
+              ElevatedButton.icon(
+                onPressed: _playPodcast,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Play Podcast'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              if (_generatedScript != null) ...[
+                ExpansionTile(
+                  title: const Text('View Script'),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(_generatedScript!),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 }
